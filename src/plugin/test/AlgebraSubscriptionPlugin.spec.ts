@@ -16,7 +16,7 @@ const recipientFlag = 1n;
 const txOriginFlag = 2n;
 const notifyFlag = 4n;
 
-describe.only('AlgebraSubscriptionPlugin', () => {
+describe('AlgebraSubscriptionPlugin', () => {
   let wallet: Wallet, otherWallet: Wallet;
   let mockPool: MockPool; // mock of AlgebraPool
   let subscriptionPluginFactory: SubscriptionPluginFactory; // modified plugin factory
