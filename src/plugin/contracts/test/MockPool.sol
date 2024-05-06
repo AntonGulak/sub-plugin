@@ -13,6 +13,8 @@ import '@cryptoalgebra/integral-core/contracts/interfaces/pool/IAlgebraPoolPermi
 import '@cryptoalgebra/integral-core/contracts/interfaces/pool/IAlgebraPoolErrors.sol';
 import '@cryptoalgebra/integral-core/contracts/interfaces/plugin/IAlgebraPlugin.sol';
 
+import 'hardhat/console.sol';
+
 /// @title Mock of Algebra concentrated liquidity pool for plugins testing
 contract MockPool is IAlgebraPoolActions, IAlgebraPoolPermissionedActions, IAlgebraPoolState {
   struct GlobalState {
@@ -160,12 +162,23 @@ contract MockPool is IAlgebraPoolActions, IAlgebraPoolPermissionedActions, IAlge
   }
 
   /// @inheritdoc IAlgebraPoolActions
-  function swap(address, bool, int256, uint160, bytes calldata) external pure override returns (int256, int256) {
-    revert('Not implemented');
+  function swap(address, bool, int256, uint160, bytes calldata) external override returns (int256, int256) {
+    IAlgebraPlugin _plugin = IAlgebraPlugin(plugin);
+
+    if (globalState.pluginConfig & Plugins.BEFORE_SWAP_FLAG != 0) {
+      _plugin.beforeSwap(msg.sender, msg.sender, true, 0, 0, false, '');
+    }
+
+    if (globalState.pluginConfig & Plugins.AFTER_SWAP_FLAG != 0) {
+      _plugin.afterSwap(msg.sender, msg.sender, true, 0, 0, 0, 0, '');
+    }
+
+    return (0, 0);
   }
 
   function swapToTick(int24 targetTick) external {
     IAlgebraPlugin _plugin = IAlgebraPlugin(plugin);
+
     if (globalState.pluginConfig & Plugins.BEFORE_SWAP_FLAG != 0) {
       _plugin.beforeSwap(msg.sender, msg.sender, true, 0, 0, false, '');
     }

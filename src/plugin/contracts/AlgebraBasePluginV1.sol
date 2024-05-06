@@ -33,7 +33,7 @@ contract AlgebraBasePluginV1 is IAlgebraBasePluginV1, Timestamp, IAlgebraPlugin 
   uint8 public constant override defaultPluginConfig = uint8(Plugins.AFTER_INIT_FLAG | Plugins.BEFORE_SWAP_FLAG | Plugins.DYNAMIC_FEE);
 
   /// @inheritdoc IFarmingPlugin
-  address public immutable override pool;
+  address public immutable pool;
   address private immutable factory;
   address private immutable pluginFactory;
 
@@ -284,9 +284,6 @@ contract AlgebraBasePluginV1 is IAlgebraBasePluginV1, Timestamp, IAlgebraPlugin 
 
   function _updatePluginConfigInPool() internal {
     uint8 newPluginConfig = defaultPluginConfig;
-    if (incentive != address(0)) {
-      newPluginConfig |= uint8(Plugins.AFTER_SWAP_FLAG);
-    }
 
     (, , , uint8 currentPluginConfig) = _getPoolState();
     if (currentPluginConfig != newPluginConfig) {

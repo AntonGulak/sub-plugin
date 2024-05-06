@@ -1,5 +1,16 @@
 import { ethers } from 'hardhat';
-import { MockFactory, MockPool, MockTimeAlgebraBasePluginV1, MockTimeDSFactory, BasePluginV1Factory } from '../../typechain';
+import {
+  MockFactory,
+  MockPool,
+  MockTimeAlgebraBasePluginV1,
+  MockTimeDSFactory,
+  BasePluginV1Factory,
+  SubscriptionPluginFactory,
+  AlgebraSubscriptionPlugin,
+  TestERC20,
+} from '../../typechain';
+import { tokensFixture } from './externalFixtures';
+import { encodePriceSqrt } from '../shared/utilities';
 
 type Fixture<T> = () => Promise<T>;
 interface MockFactoryFixture {
@@ -34,6 +45,8 @@ export const pluginFixture: Fixture<PluginFixture> = async function (): Promise<
   const mockPoolFactory = await ethers.getContractFactory('MockPool');
   const mockPool = (await mockPoolFactory.deploy()) as any as MockPool;
 
+  await mockPool.initialize(encodePriceSqrt(1, 1));
+
   await mockPluginFactory.createPlugin(mockPool, ZERO_ADDRESS, ZERO_ADDRESS);
   const pluginAddress = await mockPluginFactory.pluginByPool(mockPool);
 
@@ -45,6 +58,37 @@ export const pluginFixture: Fixture<PluginFixture> = async function (): Promise<
     mockPluginFactory,
     mockPool,
     mockFactory,
+  };
+};
+
+interface SubPluginFixture extends MockFactoryFixture {
+  subscriptionPluginFactory: SubscriptionPluginFactory;
+  mockPool: MockPool;
+  token0: TestERC20;
+  token1: TestERC20;
+  paymentToken: TestERC20;
+}
+
+export const algebraSubscriptionPluginFixture: Fixture<SubPluginFixture> = async function (): Promise<SubPluginFixture> {
+  const { mockFactory } = await mockFactoryFixture();
+  const { token0, token1 } = await tokensFixture();
+  const { token0: paymentToken } = await tokensFixture();
+
+  const SubscriptionPluginFactory = await ethers.getContractFactory('MockTimeSubPluginFactory');
+  const subscriptionPluginFactory = (await SubscriptionPluginFactory.deploy(mockFactory)) as any as SubscriptionPluginFactory;
+
+  const mockPoolFactory = await ethers.getContractFactory('MockPool');
+  const mockPool = (await mockPoolFactory.deploy()) as any as MockPool;
+
+  await mockFactory.stubPool(token0, token1, mockPool);
+
+  return {
+    subscriptionPluginFactory,
+    mockPool,
+    mockFactory,
+    token0,
+    token1,
+    paymentToken,
   };
 };
 
