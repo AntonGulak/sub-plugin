@@ -41,7 +41,8 @@ contract SubscriptionPluginFactory {
     require(paymentToken != address(0), 'Incorrect payment token');
     require(subscriptionTime != 0, 'Incorrect subscription time');
     require(feesReceiver != address(0), 'Incorrect fees receiver');
-    require(subscriptionConfig << 6 != 0, 'Incorrect subscription config'); //1 bit == RECIPIENT_FLAG, 2 bit == TX_ORIGIN_FLAG
+    //0 bit == MSG_SENDER_FLAG, 1 bit == RECIPIENT_FLAG, 2 bit == TX_ORIGIN_FLAG
+    require(subscriptionConfig << 5 != 0, 'Incorrect subscription config');
 
     IAlgebraFactory factory = IAlgebraFactory(algebraFactory);
     require(factory.hasRoleOrOwner(POOLS_ADMINISTRATOR_ROLE, msg.sender), 'Only pool admin');

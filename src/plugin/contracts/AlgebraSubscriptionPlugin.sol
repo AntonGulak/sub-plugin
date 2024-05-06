@@ -17,6 +17,8 @@ import './libraries/MerkleProofLib.sol';
 
 import './interfaces/IPaymentNotifier.sol';
 
+import 'hardhat/console.sol';
+
 contract AlgebraSubscriptionPlugin is IAlgebraPlugin, Timestamp256 {
   using Subscriptions for uint8;
   using MerkleProofLib for bytes32[];
@@ -141,8 +143,16 @@ contract AlgebraSubscriptionPlugin is IAlgebraPlugin, Timestamp256 {
 
   // ###### HOOKS ######
 
-  function beforeSwap(address recipient, address, bool, int256, uint160, bool, bytes calldata) external view override onlyPool returns (bytes4) {
-    _checkSubscription(recipient);
+  function beforeSwap(
+    address msgSender,
+    address recipient,
+    bool,
+    int256,
+    uint160,
+    bool,
+    bytes calldata
+  ) external view override onlyPool returns (bytes4) {
+    _checkSubscription(msgSender, recipient);
     return IAlgebraPlugin.beforeSwap.selector;
   }
 
@@ -188,15 +198,15 @@ contract AlgebraSubscriptionPlugin is IAlgebraPlugin, Timestamp256 {
     return IAlgebraPlugin.afterFlash.selector;
   }
 
-  function _checkSubscription(address recipient) internal view {
+  function _checkSubscription(address msgSender, address recipient) internal view {
     _checkIfPlaginNotInitialized();
 
     if (subscriptionCost != 0) {
-      if (subscriptionConfig.hasFlag(Subscriptions.RECIPIENT_FLAG)) _checkSubscriptionDuration(recipient);
+      uint8 _subscriptionConfig = subscriptionConfig;
 
-      if (subscriptionConfig.hasFlag(Subscriptions.TX_ORIGIN_FLAG)) {
-        if (recipient != tx.origin) _checkSubscriptionDuration(tx.origin);
-      }
+      _checkSubscriptionDuration(msgSender, _subscriptionConfig.hasFlag(Subscriptions.MSG_SENDER_FLAG));
+      _checkSubscriptionDuration(recipient, _subscriptionConfig.hasFlag(Subscriptions.RECIPIENT_FLAG));
+      _checkSubscriptionDuration(tx.origin, _subscriptionConfig.hasFlag(Subscriptions.TX_ORIGIN_FLAG));
     }
   }
 
@@ -204,9 +214,10 @@ contract AlgebraSubscriptionPlugin is IAlgebraPlugin, Timestamp256 {
     if (subscriptionConfig.hasFlag(Subscriptions.NOTIFY_FLAG)) IPaymentNotifier(feesReceiver).notify(periods, paidAmount, subscriber, payer);
   }
 
-  function _checkSubscriptionDuration(address subscriber) internal view {
-    uint256 subscriptionEnd = subscriptions[subscriber];
-    require(subscriptionEnd >= _blockTimestamp(), 'Subscription is out of date');
+  function _checkSubscriptionDuration(address subscriber, bool toCheck) internal view {
+    if (toCheck) {
+      require(subscriptions[subscriber] >= _blockTimestamp(), 'Subscription is out of date');
+    }
   }
 
   function _updatePluginConfigInPool() internal {

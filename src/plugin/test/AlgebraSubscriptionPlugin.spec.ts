@@ -12,9 +12,10 @@ import snapshotGasCost from './shared/snapshotGasCost';
 import { subscribe } from 'diagnostics_channel';
 
 const day = 60n * 60n * 24n;
-const recipientFlag = 1n;
-const txOriginFlag = 2n;
-const notifyFlag = 4n;
+const msgSenderFlag = 1n;
+const recipientFlag = 2n;
+const txOriginFlag = 4n;
+const notifyFlag = 8n;
 
 describe('AlgebraSubscriptionPlugin', () => {
   let wallet: Wallet, otherWallet: Wallet;
@@ -76,7 +77,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       const payerBalanceBefore = await paymentToken.balanceOf(wallet);
       const feesReceiverBalanceBefore = await paymentToken.balanceOf(feesReceiver);
@@ -100,7 +101,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       const payerBalanceBefore = await paymentToken.balanceOf(wallet);
       const feesReceiverBalanceBefore = await paymentToken.balanceOf(feesReceiver);
@@ -124,7 +125,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       const payerBalanceBefore = await paymentToken.balanceOf(wallet);
       const feesReceiverBalanceBefore = await paymentToken.balanceOf(feesReceiver);
@@ -151,7 +152,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const amountToPay = subscriptionCost * periods;
       const partOfAmountToPay = subscriptionCost * partOfPeriods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       const payerBalanceBefore = await paymentToken.balanceOf(wallet);
       const feesReceiverBalanceBefore = await paymentToken.balanceOf(feesReceiver);
@@ -180,7 +181,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       await paymentToken.approve(subPlugin.target, amountToPay);
       await expect(subPlugin.payForSubscription(periods, wallet))
@@ -207,7 +208,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       await paymentToken.approve(subPlugin.target, amountToPay);
       await expect(subPlugin.payForSubscription(periods, wallet))
@@ -234,7 +235,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       await paymentToken.approve(subPlugin.target, amountToPay);
       await expect(subPlugin.payForSubscription(periods, wallet)).to.be.revertedWith('Incorrect periods');
@@ -246,7 +247,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
 
       await paymentToken.approve(subPlugin.target, amountToPay);
       await expect(subPlugin.payForSubscription(periods, ethers.ZeroAddress)).to.be.revertedWith('Incorrect subscriber');
@@ -258,7 +259,7 @@ describe('AlgebraSubscriptionPlugin', () => {
       const subscriptionTime = 30n * day;
       const amountToPay = subscriptionCost * periods;
 
-      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
       await subPlugin.setInitilized(false);
 
       await paymentToken.approve(subPlugin.target, amountToPay);
@@ -267,7 +268,35 @@ describe('AlgebraSubscriptionPlugin', () => {
   });
 
   describe('#swap', async () => {
-    it('Should correct swap with subscription', async () => {
+    it('Should correct swap with subscription (MSG_SENDER_FLAG, payer == recipient)', async () => {
+      const subscriptionCost = 100n;
+      const periods = 1n;
+      const subscriptionTime = 30n * day;
+      const amountToPay = subscriptionCost * periods;
+
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
+
+      await paymentToken.approve(subPlugin.target, amountToPay);
+      await subPlugin.payForSubscription(periods, wallet);
+
+      await mockPool.swap(wallet, true, 100, 1, ethers.ZeroHash);
+    });
+
+    it('Should correct swap with subscription (MSG_SENDER_FLAG, payer != recipient)', async () => {
+      const subscriptionCost = 100n;
+      const periods = 1n;
+      const subscriptionTime = 30n * day;
+      const amountToPay = subscriptionCost * periods;
+
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, msgSenderFlag);
+
+      await paymentToken.approve(subPlugin.target, amountToPay);
+      await subPlugin.payForSubscription(periods, wallet);
+
+      await mockPool.swap(otherWallet, true, 100, 1, ethers.ZeroHash);
+    });
+
+    it('Should correct swap with subscription (RECIPIENT_FLAG, payer == recipient)', async () => {
       const subscriptionCost = 100n;
       const periods = 1n;
       const subscriptionTime = 30n * day;
@@ -281,13 +310,27 @@ describe('AlgebraSubscriptionPlugin', () => {
       await mockPool.swap(wallet, true, 100, 1, ethers.ZeroHash);
     });
 
-    it('Should should throw an error without subscription', async () => {
+    it('Should should throw an error without subscription (RECIPIENT_FLAG, payer != recipient)', async () => {
       const subscriptionCost = 100n;
       const subscriptionTime = 30n * day;
 
       await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
 
       await expect(mockPool.swap(wallet, true, 100, 1, ethers.ZeroHash)).to.be.revertedWith('Subscription is out of date');
+    });
+
+    it('Should should throw an error without own subscription (RECIPIENT_FLAG, payer != recipient)', async () => {
+      const subscriptionCost = 100n;
+      const periods = 1n;
+      const subscriptionTime = 30n * day;
+      const amountToPay = subscriptionCost * periods;
+
+      const subPlugin: MockTimeAlgebraSubPlugin = await createAndInitPlugin(subscriptionTime, subscriptionCost, recipientFlag);
+
+      await paymentToken.approve(subPlugin.target, amountToPay);
+      await subPlugin.payForSubscription(periods, wallet);
+
+      await expect(mockPool.swap(otherWallet, true, 100, 1, ethers.ZeroHash)).to.be.revertedWith('Subscription is out of date');
     });
   });
 });

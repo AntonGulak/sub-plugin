@@ -8,7 +8,8 @@ library Subscriptions {
     }
   }
 
-  uint256 internal constant RECIPIENT_FLAG = 1;
-  uint256 internal constant TX_ORIGIN_FLAG = 1 << 1;
-  uint256 internal constant NOTIFY_FLAG = 1 << 2;
+  uint256 internal constant MSG_SENDER_FLAG = 1;
+  uint256 internal constant RECIPIENT_FLAG = 1 << 1;
+  uint256 internal constant TX_ORIGIN_FLAG = 1 << 2;
+  uint256 internal constant NOTIFY_FLAG = 1 << 3;
 }

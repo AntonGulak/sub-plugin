@@ -162,15 +162,15 @@ contract MockPool is IAlgebraPoolActions, IAlgebraPoolPermissionedActions, IAlge
   }
 
   /// @inheritdoc IAlgebraPoolActions
-  function swap(address, bool, int256, uint160, bytes calldata) external override returns (int256, int256) {
+  function swap(address recipient, bool, int256, uint160, bytes calldata) external override returns (int256, int256) {
     IAlgebraPlugin _plugin = IAlgebraPlugin(plugin);
 
     if (globalState.pluginConfig & Plugins.BEFORE_SWAP_FLAG != 0) {
-      _plugin.beforeSwap(msg.sender, msg.sender, true, 0, 0, false, '');
+      _plugin.beforeSwap(msg.sender, recipient, true, 0, 0, false, '');
     }
 
     if (globalState.pluginConfig & Plugins.AFTER_SWAP_FLAG != 0) {
-      _plugin.afterSwap(msg.sender, msg.sender, true, 0, 0, 0, 0, '');
+      _plugin.afterSwap(msg.sender, recipient, true, 0, 0, 0, 0, '');
     }
 
     return (0, 0);
