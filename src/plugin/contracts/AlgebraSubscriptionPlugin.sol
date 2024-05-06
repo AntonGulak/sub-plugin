@@ -195,7 +195,7 @@ contract AlgebraSubscriptionPlugin is IAlgebraPlugin, Timestamp256 {
       if (subscriptionConfig.hasFlag(Subscriptions.RECIPIENT_FLAG)) _checkSubscriptionDuration(recipient);
 
       if (subscriptionConfig.hasFlag(Subscriptions.TX_ORIGIN_FLAG)) {
-        if (recipient != tx.origin) _checkSubscriptionDuration(recipient);
+        if (recipient != tx.origin) _checkSubscriptionDuration(tx.origin);
       }
     }
   }
